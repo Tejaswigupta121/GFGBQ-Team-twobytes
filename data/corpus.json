@@ -1,0 +1,10 @@
+[
+  {
+    "id": "doc1",
+    "text": "Large language models are prone to hallucination, which refers to the generation of factually incorrect or fabricated information."
+  },
+  {
+    "id": "doc2",
+    "text": "FAISS is a library developed by Meta for efficient similarity search and clustering of dense vectors."
+  }
+]
