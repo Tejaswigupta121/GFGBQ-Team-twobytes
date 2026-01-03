@@ -1,9 +1,14 @@
 import streamlit as st
 import json
+from io import BytesIO
 
 from claim_extractor import extract_claims
 from claim_verifier import verify_claim_pipeline, compute_trust_score
 from citation_verifier import verify_citations
+
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
 
 
 # ================= SAMPLE DEMO TEXT =================
@@ -14,29 +19,15 @@ Smith et al. (2021) proposed hallucination mitigation techniques.
 """
 
 
+# ================= PAGE CONFIG =================
+st.set_page_config(page_title="AI Hallucination Checker", layout="wide")
+
+
 # ================= SIDEBAR =================
 st.sidebar.title("⚙️ Settings")
 
-top_k = st.sidebar.slider(
-    "🔎 Evidence documents (Top-K)",
-    min_value=1,
-    max_value=5,
-    value=3
-)
-
-show_confidence = st.sidebar.checkbox(
-    "📊 Show confidence scores",
-    value=True
-)
-
-show_evidence = st.sidebar.checkbox(
-    "📄 Show retrieved evidence",
-    value=True
-)
-
-
-# ================= PAGE CONFIG =================
-st.set_page_config(page_title="AI Hallucination Checker", layout="wide")
+show_confidence = st.sidebar.checkbox("📊 Show confidence scores", value=True)
+show_evidence = st.sidebar.checkbox("📄 Show retrieved evidence", value=True)
 
 
 # ================= STYLES =================
@@ -67,39 +58,58 @@ st.markdown("""
 # ================= MAIN UI =================
 st.title("🧠 AI Hallucination & Citation Verifier")
 
-# 🧪 Demo button
 if st.button("🧪 Load Sample Demo Text"):
     st.session_state["input_text"] = SAMPLE_TEXT
 
 input_text = st.text_area(
     "📄 Paste AI-generated text here:",
     height=250,
-    key="input_text",
-    placeholder="Paste text containing claims and citations..."
+    key="input_text"
 )
 
-
-# ================= CLAIM VERIFICATION =================
 verify_btn = st.button("🔍 Verify")
 
+
+# ================= PDF GENERATOR =================
+def generate_pdf_report(results, trust_score):
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    styles = getSampleStyleSheet()
+    story = []
+
+    story.append(Paragraph("<b>AI Hallucination Verification Report</b>", styles["Title"]))
+    story.append(Spacer(1, 12))
+    story.append(Paragraph(f"<b>Trust Score:</b> {trust_score}%", styles["Normal"]))
+    story.append(Spacer(1, 12))
+
+    for i, r in enumerate(results, 1):
+        story.append(Paragraph(f"<b>Claim {i}:</b> {r['claim']}", styles["Normal"]))
+        story.append(Paragraph(f"Verdict: {r['label']}", styles["Normal"]))
+        story.append(Paragraph(f"Confidence: {r['confidence']}", styles["Normal"]))
+        story.append(Paragraph(f"Explanation: {r.get('explanation','')}", styles["Normal"]))
+        story.append(Spacer(1, 15))
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer
+
+
+# ================= VERIFICATION LOGIC =================
 if verify_btn:
     if not input_text.strip():
         st.warning("Please paste some text.")
     else:
         claims = extract_claims(input_text)
 
-        st.subheader("📊 Claim Verification Results")
-
         if not claims:
             st.info("No verifiable claims found.")
         else:
-            # ✅ Collect results
             results = []
 
             for claim in claims:
-                result = verify_claim_pipeline(claim)
-                result["claim"] = claim
-                results.append(result)
+                r = verify_claim_pipeline(claim)
+                r["claim"] = claim
+                results.append(r)
 
             # ================= TRUST SCORE =================
             trust_score = compute_trust_score(results)
@@ -109,47 +119,33 @@ if verify_btn:
             uncertain = sum(1 for r in results if r["label"] == "Not enough information")
 
             if trust_score >= 70:
-                color = "🟢"
-                message = "High confidence in generated content"
+                icon, msg = "🟢", "High confidence in generated content"
             elif trust_score >= 40:
-                color = "🟡"
-                message = "Moderate confidence – review uncertain claims"
+                icon, msg = "🟡", "Moderate confidence – review uncertain claims"
             else:
-                color = "🔴"
-                message = "Low confidence – possible hallucinations detected"
+                icon, msg = "🔴", "Low confidence – hallucinations likely"
 
             st.markdown(f"""
             ### 📊 Trust Score: {trust_score}%
 
-            {color} **{message}**
+            {icon} **{msg}**
 
-            ↳ **{supported} Supported** • **{contradicted} Contradicted** • **{uncertain} Uncertain**
+            ↳ **{supported} Supported • {contradicted} Contradicted • {uncertain} Uncertain**
             """)
 
             st.divider()
 
             # ================= CLAIM CARDS =================
             for r in results:
-                claim = r["claim"]
                 label = r["label"]
-                confidence = r["confidence"]
-                evidence = r["evidence"]
-
-                if label == "Supported":
-                    css_class = "supported"
-                    icon = "🟢"
-                elif label == "Contradicted":
-                    css_class = "contradicted"
-                    icon = "🔴"
-                else:
-                    css_class = "uncertain"
-                    icon = "🟡"
+                css = "supported" if label == "Supported" else "contradicted" if label == "Contradicted" else "uncertain"
+                icon = "🟢" if label == "Supported" else "🔴" if label == "Contradicted" else "🟡"
 
                 st.markdown(
                     f"""
-                    <div class="claim-card {css_class}">
+                    <div class="claim-card {css}">
                         <strong>{icon} {label}</strong><br/>
-                        {claim}
+                        {r["claim"]}
                     </div>
                     """,
                     unsafe_allow_html=True
@@ -157,20 +153,26 @@ if verify_btn:
 
                 if show_evidence:
                     with st.expander("🔍 Evidence"):
-                        st.write(evidence)
+                        st.write(r["evidence"])
                         if show_confidence:
-                            st.write(f"Confidence: {confidence:.2f}")
+                            st.write(f"Confidence: {r['confidence']}")
 
-            # ================= DOWNLOAD REPORT =================
+            # ================= DOWNLOADS =================
             st.divider()
 
-            report_json = json.dumps(results, indent=2)
-
             st.download_button(
-                label="⬇️ Download Verification Report (JSON)",
-                data=report_json,
-                file_name="verification_report.json",
-                mime="application/json"
+                "⬇️ Download JSON Report",
+                json.dumps(results, indent=2),
+                "verification_report.json",
+                "application/json"
+            )
+
+            pdf = generate_pdf_report(results, trust_score)
+            st.download_button(
+                "📄 Download PDF Report",
+                pdf,
+                "ai_verification_report.pdf",
+                "application/pdf"
             )
 
 
@@ -178,18 +180,15 @@ if verify_btn:
 st.divider()
 st.subheader("📚 Citation Verification")
 
-citation_results = verify_citations(input_text)
+citations = verify_citations(input_text)
 
-if not citation_results:
-    st.info("No citations detected.")
-else:
-    for item in citation_results:
-        citation = item["citation"]
-        status = item["status"]
-
-        if "✅" in status:
-            st.success(f"{citation} → {status}")
-        elif "❌" in status:
-            st.error(f"{citation} → {status}")
+if citations:
+    for c in citations:
+        if "✅" in c["status"]:
+            st.success(f"{c['citation']} → {c['status']}")
+        elif "❌" in c["status"]:
+            st.error(f"{c['citation']} → {c['status']}")
         else:
-            st.warning(f"{citation} → {status}")
+            st.warning(f"{c['citation']} → {c['status']}")
+else:
+    st.info("No citations detected.")
