@@ -63,10 +63,10 @@ input_text = st.text_area(
     placeholder="Paste text containing claims and citations..."
 )
 
-verify_btn = st.button("🔍 Verify")
-
 
 # ================= CLAIM VERIFICATION =================
+verify_btn = st.button("🔍 Verify")
+
 if verify_btn:
     if not input_text.strip():
         st.warning("Please paste some text.")
@@ -78,16 +78,48 @@ if verify_btn:
         if not claims:
             st.info("No verifiable claims found.")
         else:
-            results = []  # ⭐ REQUIRED for trust score
+            # ✅ STEP 1: Collect results
+            results = []
 
             for claim in claims:
                 result = verify_claim_pipeline(claim)
+                result["claim"] = claim
                 results.append(result)
 
-                label = result["label"]
-                confidence = result["confidence"]
-                evidence = result["evidence"]
-                explanation = result.get("explanation", "No explanation available")
+            # ✅ STEP 2: Compute trust score
+            trust_score = compute_trust_score(results)
+
+            supported = sum(1 for r in results if r["label"] == "Supported")
+            contradicted = sum(1 for r in results if r["label"] == "Contradicted")
+            uncertain = sum(1 for r in results if r["label"] == "Not enough information")
+
+            # ✅ STEP 3: Trust Score Card
+            if trust_score >= 70:
+                color = "🟢"
+                message = "High confidence in generated content"
+            elif trust_score >= 40:
+                color = "🟡"
+                message = "Moderate confidence – review uncertain claims"
+            else:
+                color = "🔴"
+                message = "Low confidence – possible hallucinations detected"
+
+            st.markdown(f"""
+            ### 📊 Trust Score: {trust_score}%
+
+            {color} **{message}**
+
+            ↳ **{supported} Supported** • **{contradicted} Contradicted** • **{uncertain} Uncertain**
+            """)
+
+            st.divider()
+
+            # ✅ STEP 4: Render each claim
+            for r in results:
+                claim = r["claim"]
+                label = r["label"]
+                confidence = r["confidence"]
+                evidence = r["evidence"]
 
                 if label == "Supported":
                     css_class = "supported"
@@ -109,13 +141,12 @@ if verify_btn:
                     unsafe_allow_html=True
                 )
 
-                st.caption(f"🧠 {explanation}")
-
                 if show_evidence:
                     with st.expander("🔍 Evidence"):
                         st.write(evidence)
                         if show_confidence:
                             st.write(f"Confidence: {confidence:.2f}")
+
 
             # ================= TRUST SCORE =================
             st.divider()
@@ -148,3 +179,9 @@ else:
             st.error(f"{citation} → {status}")
         else:
             st.warning(f"{citation} → {status}")
+
+st.subheader("📊 Claim Verification Results")
+
+
+
+
