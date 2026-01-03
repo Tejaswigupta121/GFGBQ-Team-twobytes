@@ -1,17 +1,36 @@
-# Virtual environment
+# =========================
+# Virtual Environment
+# =========================
 venv/
 
+# =========================
 # Python cache
+# =========================
 __pycache__/
 *.pyc
+*.pyo
 
-# Hugging Face / model cache
+# =========================
+# Hugging Face / Model Cache
+# =========================
 .cache/
 huggingface/
+hf_cache/
+models/
 
-# VS Code (optional)
+# =========================
+# FAISS / Generated Artifacts
+# =========================
+*.index
+*.faiss
+
+# =========================
+# VS Code
+# =========================
 .vscode/
 
-# OS files
+# =========================
+# OS / System files
+# =========================
 Thumbs.db
 .DS_Store
