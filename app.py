@@ -1,8 +1,10 @@
 import streamlit as st
 from claim_extractor import extract_claims
-from claim_verifier import verify_claim_pipeline
+from claim_verifier import verify_claim_pipeline, compute_trust_score
 from citation_verifier import verify_citations
 
+
+# ================= SIDEBAR =================
 st.sidebar.title("⚙️ Settings")
 
 top_k = st.sidebar.slider(
@@ -23,14 +25,17 @@ show_evidence = st.sidebar.checkbox(
 )
 
 
+# ================= PAGE CONFIG =================
 st.set_page_config(page_title="AI Hallucination Checker", layout="wide")
 
+
+# ================= STYLES =================
 st.markdown("""
 <style>
 .claim-card {
     padding: 1rem;
     border-radius: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     font-size: 16px;
 }
 .supported {
@@ -49,6 +54,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+# ================= MAIN UI =================
 st.title("🧠 AI Hallucination & Citation Verifier")
 
 input_text = st.text_area(
@@ -59,7 +65,8 @@ input_text = st.text_area(
 
 verify_btn = st.button("🔍 Verify")
 
-# 👇 IMPORTANT: everything happens ONLY after button click
+
+# ================= CLAIM VERIFICATION =================
 if verify_btn:
     if not input_text.strip():
         st.warning("Please paste some text.")
@@ -71,12 +78,16 @@ if verify_btn:
         if not claims:
             st.info("No verifiable claims found.")
         else:
+            results = []  # ⭐ REQUIRED for trust score
+
             for claim in claims:
                 result = verify_claim_pipeline(claim)
+                results.append(result)
 
                 label = result["label"]
                 confidence = result["confidence"]
                 evidence = result["evidence"]
+                explanation = result.get("explanation", "No explanation available")
 
                 if label == "Supported":
                     css_class = "supported"
@@ -87,22 +98,38 @@ if verify_btn:
                 else:
                     css_class = "uncertain"
                     icon = "🟡"
-                    st.markdown(
-                        f"""       
-                        <div class="claim-card{css_class}
-                            <strong>{icon} {label}</strong><br/>
-                            {claim}
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-                    if show_evidence:
-                        with st.expander("🔍 Evidence"):
-                             st.write(evidence)
-                             if show_confidence:
-                                 st.write(f"Confidence: {confidence:.2f}")
-                                 
 
+                st.markdown(
+                    f"""
+                    <div class="claim-card {css_class}">
+                        <strong>{icon} {label}</strong><br/>
+                        {claim}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                st.caption(f"🧠 {explanation}")
+
+                if show_evidence:
+                    with st.expander("🔍 Evidence"):
+                        st.write(evidence)
+                        if show_confidence:
+                            st.write(f"Confidence: {confidence:.2f}")
+
+            # ================= TRUST SCORE =================
+            st.divider()
+
+            trust_score = compute_trust_score(results)
+
+            st.metric(
+                label="📊 Trust Score",
+                value=f"{trust_score}%",
+                help="Percentage of claims verified against trusted sources"
+            )
+
+
+# ================= CITATION VERIFICATION =================
 st.divider()
 st.subheader("📚 Citation Verification")
 
@@ -121,4 +148,3 @@ else:
             st.error(f"{citation} → {status}")
         else:
             st.warning(f"{citation} → {status}")
-

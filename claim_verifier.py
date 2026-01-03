@@ -50,9 +50,21 @@ LABEL_MAP = {
     "NEUTRAL": "Not enough information"
 }
 
+
+def generate_explanation(label, evidence):
+    if label == "Supported":
+        return "Claim is supported by retrieved evidence from the corpus."
+
+    if label == "Contradicted":
+        return "Retrieved evidence contradicts the claim."
+
+    return "No sufficient supporting evidence found in the indexed corpus."
+
+
 def verify_claim(claim, evidence_docs):
     best_label = "Not enough information"
     best_confidence = 0.0
+    best_evidence = None
 
     for doc in evidence_docs:
         results = nli(doc, text_pair=claim)[0]
@@ -64,8 +76,16 @@ def verify_claim(claim, evidence_docs):
             if score > best_confidence:
                 best_confidence = score
                 best_label = LABEL_MAP.get(label, "Not enough information")
+                best_evidence = doc
 
-    return best_label, round(best_confidence, 3)
+    explanation = generate_explanation(best_label, best_evidence)
+
+    return {
+        "label": best_label,
+        "confidence": round(best_confidence, 3),
+        "evidence": best_evidence,
+        "explanation": explanation
+    }
 
 
 
@@ -105,3 +125,17 @@ if __name__ == "__main__":
     print("\n📚 Evidence:")
     for e in result["evidence"]:
         print("-", e[:200], "...")
+
+def compute_trust_score(results):
+    """
+    results: list of dicts
+    each dict contains {label, confidence, explanation}
+    """
+    if not results:
+        return 0
+
+    verified = sum(1 for r in results if r["label"] == "Supported")
+    total = len(results)
+
+    return round((verified / total) * 100, 2)
+
