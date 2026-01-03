@@ -1,7 +1,17 @@
 import streamlit as st
+import json
+
 from claim_extractor import extract_claims
 from claim_verifier import verify_claim_pipeline, compute_trust_score
 from citation_verifier import verify_citations
+
+
+# ================= SAMPLE DEMO TEXT =================
+SAMPLE_TEXT = """
+Studies show that large language models hallucinate in over 60% of cases.
+According to recent research, citation errors are common in AI-generated text.
+Smith et al. (2021) proposed hallucination mitigation techniques.
+"""
 
 
 # ================= SIDEBAR =================
@@ -57,9 +67,14 @@ st.markdown("""
 # ================= MAIN UI =================
 st.title("🧠 AI Hallucination & Citation Verifier")
 
+# 🧪 Demo button
+if st.button("🧪 Load Sample Demo Text"):
+    st.session_state["input_text"] = SAMPLE_TEXT
+
 input_text = st.text_area(
     "📄 Paste AI-generated text here:",
     height=250,
+    key="input_text",
     placeholder="Paste text containing claims and citations..."
 )
 
@@ -78,7 +93,7 @@ if verify_btn:
         if not claims:
             st.info("No verifiable claims found.")
         else:
-            # ✅ STEP 1: Collect results
+            # ✅ Collect results
             results = []
 
             for claim in claims:
@@ -86,14 +101,13 @@ if verify_btn:
                 result["claim"] = claim
                 results.append(result)
 
-            # ✅ STEP 2: Compute trust score
+            # ================= TRUST SCORE =================
             trust_score = compute_trust_score(results)
 
             supported = sum(1 for r in results if r["label"] == "Supported")
             contradicted = sum(1 for r in results if r["label"] == "Contradicted")
             uncertain = sum(1 for r in results if r["label"] == "Not enough information")
 
-            # ✅ STEP 3: Trust Score Card
             if trust_score >= 70:
                 color = "🟢"
                 message = "High confidence in generated content"
@@ -114,7 +128,7 @@ if verify_btn:
 
             st.divider()
 
-            # ✅ STEP 4: Render each claim
+            # ================= CLAIM CARDS =================
             for r in results:
                 claim = r["claim"]
                 label = r["label"]
@@ -147,16 +161,16 @@ if verify_btn:
                         if show_confidence:
                             st.write(f"Confidence: {confidence:.2f}")
 
-
-            # ================= TRUST SCORE =================
+            # ================= DOWNLOAD REPORT =================
             st.divider()
 
-            trust_score = compute_trust_score(results)
+            report_json = json.dumps(results, indent=2)
 
-            st.metric(
-                label="📊 Trust Score",
-                value=f"{trust_score}%",
-                help="Percentage of claims verified against trusted sources"
+            st.download_button(
+                label="⬇️ Download Verification Report (JSON)",
+                data=report_json,
+                file_name="verification_report.json",
+                mime="application/json"
             )
 
 
@@ -179,9 +193,3 @@ else:
             st.error(f"{citation} → {status}")
         else:
             st.warning(f"{citation} → {status}")
-
-st.subheader("📊 Claim Verification Results")
-
-
-
-
