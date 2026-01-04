@@ -21,9 +21,33 @@ nli = pipeline(
 # =========================
 # Load FAISS Index & Corpus
 # =========================
+CORPUS_PATH = "data/corpus.json"
 
+with open(CORPUS_PATH, "r", encoding="utf-8") as f:
+    corpus = json.load(f)
 print("📦 Loading FAISS index...")
-faiss_index = faiss.read_index("data/corpus.index")
+import os
+
+INDEX_PATH = "data/corpus.index"
+
+if os.path.exists(INDEX_PATH):
+    print("📦 Loading FAISS index...")
+    faiss_index = faiss.read_index(INDEX_PATH)
+else:
+    print("⚠️ FAISS index not found. Building index...")
+
+    texts = [doc["text"] for doc in corpus]
+
+    embeddings = embedder.encode(texts, show_progress_bar=False)
+    embeddings = np.array(embeddings).astype("float32")
+
+    dimension = embeddings.shape[1]
+    faiss_index = faiss.IndexFlatL2(dimension)
+    faiss_index.add(embeddings)
+
+    faiss.write_index(faiss_index, INDEX_PATH)
+    print("✅ FAISS index built and saved")
+
 
 print("📚 Loading corpus...")
 with open("data/corpus.json", "r", encoding="utf-8") as f:
