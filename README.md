@@ -38,7 +38,7 @@ Build a system that can detect, flag, and verify factual claims and citations ge
 
 ## 6️⃣ PPT Link
 
-📊 *[Add your presentation link here]*
+📊https://docs.google.com/presentation/d/17D-ImgNdI-QYHA3a9GS-ZrHZ1vcdcor4/edit?usp=sharing&ouid=106658113168494542941&rtpof=true&sd=true
 
 ---
 
