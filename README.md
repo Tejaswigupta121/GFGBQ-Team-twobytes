@@ -200,6 +200,20 @@ Color-coded interpretation:
 
 ---
 
+# Contributions
+
+Contributions are welcome! Feel free to fork the repository and submit pull requests for improvements, bug fixes, or new features.
+
+# 🚀 Future Enhancements
+
+Integration with trusted sources like Wikipedia and government datasets
+
+Real-time web-based fact verification
+
+Enhanced numerical and citation checking
+
+Multiple report export formats and API support
+
 
 # 🏁 Conclusion
 
