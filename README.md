@@ -187,28 +187,19 @@ Color-coded interpretation:
 
 ---
 
-# 📸 Relevant Screenshots
+## 📸 Relevant Screenshots
 
-*Add the following images to `/assets/` and embed them here:*
+### 🏠 Home UI
+![Home UI](assets/Home.png)
 
-```md
-![Home UI](assets/home.png)
-![Trust Score Summary](assets/trust_score.png)
-![Evidence View](assets/evidence.png)
+### 📊 Trust Score Summary
+![Trust Score Summary](assets/trust_report.png)
+
+### 📄 PDF Report
 ![PDF Report](assets/pdf_report.png)
-```
 
 ---
 
-# 🚀 Future Enhancements
-
-* Live web search (Bing / Google API)
-* Government open data ingestion
-* Citation DOI verification
-* Multilingual claim verification
-* Browser extension integration
-
----
 
 # 🏁 Conclusion
 
