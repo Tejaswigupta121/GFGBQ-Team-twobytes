@@ -32,7 +32,7 @@ Build a system that can detect, flag, and verify factual claims and citations ge
 
 ## 5️⃣ 2-Minute Demonstration Video Link
 
-🎥 *[Add your Google Drive / YouTube link here]*
+https://drive.google.com/file/d/1z4Zdt8E67S9d7NKjbsubGVKMrMpht3oE/view?usp=sharing
 
 ---
 
