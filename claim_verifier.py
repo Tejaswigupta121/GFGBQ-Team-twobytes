@@ -32,7 +32,12 @@ INDEX_PATH = "data/corpus.index"
 
 if os.path.exists(INDEX_PATH):
     print("📦 Loading FAISS index...")
-    faiss_index = faiss.read_index(INDEX_PATH)
+    faiss_index = None
+    def load_faiss():
+         global faiss_index
+         if faiss_index is None:
+             faiss_index = faiss.read_index("data/corpus.index")
+
 else:
     print("⚠️ FAISS index not found. Building index...")
 
@@ -58,6 +63,7 @@ with open("data/corpus.json", "r", encoding="utf-8") as f:
 # =========================
 
 def retrieve_evidence(claim, top_k=3):
+    load_faiss()
     """
     Retrieves top-k relevant documents from FAISS index safely
     Returns full document metadata
