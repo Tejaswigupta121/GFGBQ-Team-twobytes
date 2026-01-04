@@ -2,10 +2,14 @@ import nltk
 from nltk.tokenize import sent_tokenize
 import re
 
+# Ensure required tokenizer is available (Streamlit Cloud fix)
+nltk.download("punkt", quiet=True)
+
+
+
 def split_sentences(text):
     return sent_tokenize(text)
 text = "LLMs hallucinate. Studies show hallucination rates above 60%."
-print(split_sentences(text))
 CLAIM_KEYWORDS = [
     "according to",
     "studies show",
