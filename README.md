@@ -38,7 +38,7 @@ Build a system that can detect, flag, and verify factual claims and citations ge
 
 ## 6️⃣ PPT Link
 
-📊 *[Add your presentation link here]*
+📊https://docs.google.com/presentation/d/17D-ImgNdI-QYHA3a9GS-ZrHZ1vcdcor4/edit?usp=sharing&ouid=106658113168494542941&rtpof=true&sd=true
 
 ---
 
@@ -187,28 +187,33 @@ Color-coded interpretation:
 
 ---
 
-# 📸 Relevant Screenshots
+## 📸 Relevant Screenshots
 
-*Add the following images to `/assets/` and embed them here:*
+### 🏠 Home UI
+![Home UI](assets/Home.png)
 
-```md
-![Home UI](assets/home.png)
-![Trust Score Summary](assets/trust_score.png)
-![Evidence View](assets/evidence.png)
+### 📊 Trust Score Summary
+![Trust Score Summary](assets/trust_report.png)
+
+### 📄 PDF Report
 ![PDF Report](assets/pdf_report.png)
-```
 
 ---
+
+# Contributions
+
+Contributions are welcome! Feel free to fork the repository and submit pull requests for improvements, bug fixes, or new features.
 
 # 🚀 Future Enhancements
 
-* Live web search (Bing / Google API)
-* Government open data ingestion
-* Citation DOI verification
-* Multilingual claim verification
-* Browser extension integration
+Integration with trusted sources like Wikipedia and government datasets
 
----
+Real-time web-based fact verification
+
+Enhanced numerical and citation checking
+
+Multiple report export formats and API support
+
 
 # 🏁 Conclusion
 
