@@ -1,18 +1,20 @@
 import nltk
-from nltk.tokenize import sent_tokenize
 import re
+from nltk.tokenize import sent_tokenize
 
-# Ensure required tokenizer is available (Streamlit Cloud fix)
+# =========================
+# NLTK SETUP (Streamlit-safe)
+# =========================
 nltk.download("punkt", quiet=True)
 
+# =========================
+# CLAIM HEURISTICS
+# =========================
 
-
-def split_sentences(text):
-    return sent_tokenize(text)
-text = "LLMs hallucinate. Studies show hallucination rates above 60%."
 CLAIM_KEYWORDS = [
     "according to",
     "studies show",
+    "study shows",
     "research indicates",
     "research shows",
     "reported that",
@@ -21,35 +23,40 @@ CLAIM_KEYWORDS = [
     "evidence shows"
 ]
 
-def contains_number(sentence):
+# =========================
+# HELPERS
+# =========================
+
+def split_sentences(text: str):
+    return sent_tokenize(text)
+
+
+def contains_number(sentence: str) -> bool:
     return bool(re.search(r"\d", sentence))
-def is_claim(sentence):
+
+
+def is_claim(sentence: str) -> bool:
     s = sentence.lower()
 
-    # Keyword-based
+    # Keyword-based claims
     if any(keyword in s for keyword in CLAIM_KEYWORDS):
         return True
 
-    # Numeric claims
+    # Numeric claims (percentages, years, stats)
     if contains_number(sentence):
         return True
 
     return False
-def extract_claims(text):
+
+
+# =========================
+# MAIN API (USED BY app.py)
+# =========================
+
+def extract_claims(text: str):
+    """
+    Extracts factual claims from input text.
+    """
     sentences = split_sentences(text)
     claims = [s for s in sentences if is_claim(s)]
     return claims
-if __name__ == "__main__":
-    sample_text = """
-    Large language models are widely used.
-    Studies show LLMs hallucinate in over 60% of cases.
-    According to recent research, citation errors are common.
-    Smith et al. (2021) proposed hallucination mitigation.
-    """
-
-    claims = extract_claims(sample_text)
-
-    print("🔍 Extracted Claims:")
-    for c in claims:
-        print("-", c)
-
