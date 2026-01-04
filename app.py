@@ -10,6 +10,20 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
+# ================= HEADER =================
+col1, col2 = st.columns([1, 5])
+
+with col1:
+    st.image("assets/hallucinot_logo.png", width=90)
+
+with col2:
+    st.markdown("""
+    <h1 style='margin-bottom:0;'>Halluci<span style="color:#e74c3c;">NOT</span></h1>
+    """, unsafe_allow_html=True)
+
+st.divider()
+
+
 
 # ================= SAMPLE DEMO TEXT =================
 SAMPLE_TEXT = """
