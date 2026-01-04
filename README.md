@@ -20,4 +20,18 @@ TwoBytes
 
 # PPT Link
 
-## Project Overview
+# Solution Overview
+
+We built an end-to-end AI hallucination detection system that:
+
+Extracts verifiable claims from text
+
+Retrieves relevant evidence from trusted datasets
+
+Verifies claims using Natural Language Inference (NLI)
+
+Detects and validates citations
+
+Generates trust scores and human-readable explanations
+
+Provides a clean, interactive Streamlit UI
