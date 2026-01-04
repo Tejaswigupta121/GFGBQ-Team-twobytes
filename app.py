@@ -108,6 +108,9 @@ if verify_btn:
 
             for claim in claims:
                 r = verify_claim_pipeline(claim)
+                confidence = r["confidence"]
+                evidence = r["evidence"]
+                explanation = r["explanation"]
                 r["claim"] = claim
                 results.append(r)
 
@@ -155,7 +158,12 @@ if verify_btn:
                     with st.expander("🔍 Evidence"):
                         st.write(r["evidence"])
                         if show_confidence:
-                            st.write(f"Confidence: {r['confidence']}")
+                            conf = r.get("confidence", 0.0)
+                            if label== "Not enough information":
+                                st.write(f"⚠️ Model confidence (neutrality): {confidence: .2f}")
+                            else:
+                                st.write(f"Confidence: {confidence: .2f}")
+                        
 
             # ================= DOWNLOADS =================
             st.divider()

@@ -15,7 +15,7 @@ print("🔄 Loading NLI model...")
 nli = pipeline(
     "text-classification",
     model="facebook/bart-large-mnli",
-    top_k=None   # IMPORTANT: returns list of label-score dicts
+    top_k=None  # IMPORTANT: returns list of label-score dicts
 )
 
 # =========================
@@ -30,19 +30,47 @@ with open("data/corpus.json", "r", encoding="utf-8") as f:
     corpus = json.load(f)
 
 # =========================
-# Evidence Retrieval
+# Evidence Retrieval (SAFE)
 # =========================
 
 def retrieve_evidence(claim, top_k=3):
     """
-    Retrieves top-k relevant documents from FAISS index
+    Retrieves top-k relevant documents from FAISS index safely
+    Returns full document metadata
     """
     embedding = embedder.encode([claim])
     embedding = np.array(embedding).astype("float32")
 
     _, indices = faiss_index.search(embedding, top_k)
 
-    return [corpus[i]["text"] for i in indices[0]]
+    evidence_docs = []
+
+    for idx in indices[0]:
+        # ❗ SAFETY CHECKS (VERY IMPORTANT)
+        if idx == -1:
+            continue
+        if idx >= len(corpus):
+            continue
+
+        doc = corpus[idx]
+
+        # Ensure consistent structure
+        if isinstance(doc, dict):
+            evidence_docs.append({
+                "text": doc.get("text", ""),
+                "source": doc.get("source", "Internal Dataset"),
+                "id": doc.get("id", "unknown"),
+                "url": doc.get("url", "")
+            })
+        else:
+            evidence_docs.append({
+                "text": str(doc),
+                "source": "Internal Dataset",
+                "id": "unknown",
+                "url": ""
+            })
+
+    return evidence_docs
 
 # =========================
 # Label Mapping
@@ -79,7 +107,7 @@ def verify_claim(claim, evidence_docs):
     {
         label: Supported | Contradicted | Not enough information
         confidence: float
-        evidence: str
+        evidence: dict
         explanation: str
     }
     """
@@ -89,27 +117,50 @@ def verify_claim(claim, evidence_docs):
     best_evidence = None
 
     for doc in evidence_docs:
-        # BART-MNLI expects: premise=doc, hypothesis=claim
-        results = nli(
-            doc,
+        premise = doc.get("text", "")
+        if not premise:
+            continue
+
+        # MNLI inference
+        outputs = nli(
+            premise,
             text_pair=claim,
             top_k=None
         )
 
-        for r in results:
+        # outputs is a LIST of dicts
+        for r in outputs:
             score = r.get("score", 0.0)
-            label = r.get("label", "")
+            raw_label = r.get("label", "")
+
+            mapped_label = LABEL_MAP.get(raw_label, "Not enough information")
 
             if score > best_confidence:
                 best_confidence = score
-                best_label = LABEL_MAP.get(label, "Not enough information")
+                best_label = mapped_label
                 best_evidence = doc
 
+    # 🔒 NUMERIC CLAIM SAFEGUARD (VERY IMPORTANT)
+    if best_label == "Supported" and best_evidence:
+        claim_has_number = any(char.isdigit() for char in claim)
+        evidence_text = best_evidence.get("text", "")
+        evidence_has_number = any(char.isdigit() for char in evidence_text)
+
+        # Numeric claim but generic evidence → downgrade
+        if claim_has_number and not evidence_has_number:
+            best_label = "Not enough information"
+            best_confidence = min(best_confidence, 0.6)
+
     explanation = generate_explanation(best_label, best_evidence)
+    if best_label == "Not enough information":
+        display_confidence = 1 - best_confidence   # uncertainty-aware
+    else:
+        display_confidence = best_confidence
+
 
     return {
         "label": best_label,
-        "confidence": round(best_confidence, 3),
+        "confidence": round(display_confidence, 3),
         "evidence": best_evidence,
         "explanation": explanation
     }
@@ -124,7 +175,6 @@ def verify_claim_pipeline(claim):
     claim → retrieve evidence → verify → return structured result
     """
     evidence_docs = retrieve_evidence(claim)
-
     result = verify_claim(claim, evidence_docs)
 
     return {
@@ -134,6 +184,8 @@ def verify_claim_pipeline(claim):
         "evidence": result["evidence"],
         "explanation": result["explanation"]
     }
+
+
 
 # =========================
 # Trust Score
@@ -164,4 +216,4 @@ if __name__ == "__main__":
     print("📌 Verdict:", result["label"])
     print("📊 Confidence:", result["confidence"])
     print("🧠 Explanation:", result["explanation"])
-    print("📚 Evidence:", result["evidence"][:200], "...")
+    print("📚 Evidence:", result["evidence"]["text"][:200], "...")
