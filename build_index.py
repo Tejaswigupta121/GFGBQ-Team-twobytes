@@ -3,9 +3,16 @@ import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-# Load corpus
+import json
+
 with open("data/corpus.json", "r", encoding="utf-8") as f:
-    corpus = json.load(f)
+    base_corpus = json.load(f)
+
+with open("data/wiki_corpus.json", "r", encoding="utf-8") as f:
+    wiki_corpus = json.load(f)
+
+corpus = base_corpus + wiki_corpus
+
 
 texts = [doc["text"] for doc in corpus]
 
